@@ -37,9 +37,9 @@ class _GeocodingDistanceCalculatorPageState
   final ll.Distance distance = const ll.Distance();
 
   // UI state
-  String _locationStatus = 'Initializing...';
- // bool _isLoading = false;
-  bool _isLoading = 12;
+  String _locationStatus = 'Initializing...3';
+  bool _isLoading = false;
+
 
   // Fallback center (Dhaka)
   final ll.LatLng _fallbackCenter = const ll.LatLng(23.780573, 90.279239);
