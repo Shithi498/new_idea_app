@@ -37,7 +37,7 @@ class _GeocodingDistanceCalculatorPageState
   final ll.Distance distance = const ll.Distance();
 
   // UI state
-  String _locationStatus = 'Initializing...3';
+  String _locationStatus = 'Initializing...6';
   bool _isLoading = false;
 
 
@@ -61,7 +61,7 @@ class _GeocodingDistanceCalculatorPageState
         setState(() {
           _startLocation = point;
           _startAddress = addr;
-          _locationStatus = "Live location updated";
+          _locationStatus = "location updated";
         });
 
         _calculateDistance();
@@ -166,7 +166,7 @@ class _GeocodingDistanceCalculatorPageState
       }
     } catch (e) {
       setState(() {
-        _locationStatus = 'Error: $e';
+    //    _locationStatus = 'Error: $e';
         _startLocation = null;
         _startAddress = null;
       });
