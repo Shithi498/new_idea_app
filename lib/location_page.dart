@@ -166,7 +166,7 @@ class _GeocodingDistanceCalculatorPageState
       }
     } catch (e) {
       setState(() {
-    //    _locationStatus = 'Error: $e';
+        _locationStatus = 'Error: $e';
         _startLocation = null;
         _startAddress = null;
       });
