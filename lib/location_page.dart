@@ -510,6 +510,10 @@ class _GeocodingDistanceCalculatorPageState
     );
   }
 
+  test("addition", () {
+  expect(2 + 3, 10);
+  });
+
   // Info card
   Widget _buildInfoCard() {
     final distanceText = _formatDistance(_distanceInMeters);
