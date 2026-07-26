@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map/flutter_map.dart' as ll;
@@ -37,13 +36,13 @@ class _GeocodingDistanceCalculatorPageState
   final ll.Distance distance = const ll.Distance();
 
   // UI state
-  String _locationStatus = 'Initializing...6';
+  String _locationStatus = 'Initializing...';
   bool _isLoading = false;
-
 
   // Fallback center (Dhaka)
   final ll.LatLng _fallbackCenter = const ll.LatLng(23.780573, 90.279239);
   StreamSubscription<loc.LocationData>? _locationSub;
+
   @override
   void initState() {
     super.initState();
@@ -54,21 +53,22 @@ class _GeocodingDistanceCalculatorPageState
   void _listenLiveLocation() {
     _locationSub =
         _location.onLocationChanged.listen((loc.LocationData data) async {
-      if (data.latitude != null && data.longitude != null) {
-        final point = ll.LatLng(data.latitude!, data.longitude!);
-        final addr = await _getAddressFromLatLng(point);
+          if (data.latitude != null && data.longitude != null) {
+            final point = ll.LatLng(data.latitude!, data.longitude!);
+            final addr = await _getAddressFromLatLng(point);
 
-        setState(() {
-          _startLocation = point;
-          _startAddress = addr;
-          _locationStatus = "location updated";
+            if (!mounted) return;
+
+            setState(() {
+              _startLocation = point;
+              _startAddress = addr;
+              _locationStatus = "location updated";
+            });
+
+            _calculateDistance();
+            _moveToCenter(point, 15);
+          }
         });
-
-        _calculateDistance();
-
-        _moveToCenter(point, 15);
-      }
-    });
   }
 
   @override
@@ -81,7 +81,7 @@ class _GeocodingDistanceCalculatorPageState
   Future<String> _getAddressFromLatLng(ll.LatLng point) async {
     try {
       final placemarks =
-          await placemarkFromCoordinates(point.latitude, point.longitude);
+      await placemarkFromCoordinates(point.latitude, point.longitude);
       if (placemarks.isNotEmpty) {
         final p = placemarks.first;
         final parts = <String>[
@@ -120,7 +120,7 @@ class _GeocodingDistanceCalculatorPageState
       serviceEnabled = await _location.requestService();
       if (!serviceEnabled) {
         setState(() => _locationStatus =
-            'Location Service is disabled. Please enable it.');
+        'Location Service is disabled. Please enable it.');
         return;
       }
     }
@@ -135,7 +135,7 @@ class _GeocodingDistanceCalculatorPageState
     }
 
     setState(
-        () => _locationStatus = 'Ready. Tap the button to set Start Location.');
+            () => _locationStatus = 'Ready. Tap the button to set Start Location.');
     _listenLiveLocation();
   }
 
@@ -156,6 +156,7 @@ class _GeocodingDistanceCalculatorPageState
       if (data.latitude != null && data.longitude != null) {
         final point = ll.LatLng(data.latitude!, data.longitude!);
         final addr = await _getAddressFromLatLng(point);
+        if (!mounted) return;
         setState(() {
           _startLocation = point;
           _startAddress = addr;
@@ -165,13 +166,16 @@ class _GeocodingDistanceCalculatorPageState
         _calculateDistance();
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _locationStatus = 'Error: $e';
         _startLocation = null;
         _startAddress = null;
       });
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -182,13 +186,11 @@ class _GeocodingDistanceCalculatorPageState
     final s = _startLocation!;
     final e = _endLocation!;
 
-    // Google Maps directions URL
     final gmaps = 'https://www.google.com/maps/dir/?api=1'
         '&origin=${s.latitude},${s.longitude}'
         '&destination=${e.latitude},${e.longitude}'
         '&travelmode=driving';
 
-    // OpenStreetMap directions URL
     final osm =
         'https://www.openstreetmap.org/directions?engine=fossgis_osrm_car'
         '&route=${s.latitude},${s.longitude};${e.latitude},${e.longitude}';
@@ -214,6 +216,7 @@ class _GeocodingDistanceCalculatorPageState
   // ---------- Map interaction ----------
   void _handleMapTap(ll.TapPosition _, ll.LatLng tappedPoint) async {
     final addr = await _getAddressFromLatLng(tappedPoint);
+    if (!mounted) return;
     setState(() {
       _endLocation = tappedPoint;
       _endAddress = addr;
@@ -234,7 +237,7 @@ class _GeocodingDistanceCalculatorPageState
       showDragHandle: true,
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (ctx, setModalState) {
+          builder: (modalCtx, setModalState) {
             Future<void> doSearch() async {
               final q = controller.text.trim();
               if (q.isEmpty) return;
@@ -242,11 +245,14 @@ class _GeocodingDistanceCalculatorPageState
               try {
                 final r = await _forwardGeocode(q);
                 setModalState(() => results = r);
-              } catch (e) {
+              } catch (_) {
                 setModalState(() => results = []);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('No results for “$q”')),
-                );
+                // 🟢 Fixed async context usage
+                if (modalCtx.mounted) {
+                  ScaffoldMessenger.of(modalCtx).showSnackBar(
+                    SnackBar(content: Text('No results for “$q”')),
+                  );
+                }
               } finally {
                 setModalState(() => searching = false);
               }
@@ -256,7 +262,7 @@ class _GeocodingDistanceCalculatorPageState
               padding: EdgeInsets.only(
                 left: 16,
                 right: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 16,
                 top: 8,
               ),
               child: Column(
@@ -267,7 +273,7 @@ class _GeocodingDistanceCalculatorPageState
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
                       hintText:
-                          'Search destination (e.g., Bashundhara City, Dhaka)',
+                      'Search destination (e.g., Bashundhara City, Dhaka)',
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10)),
@@ -280,40 +286,44 @@ class _GeocodingDistanceCalculatorPageState
                     child: searching
                         ? const Center(child: CircularProgressIndicator())
                         : results.isEmpty
-                            ? const Center(
-                                child:
-                                    Text('Type a place name and press search'))
-                            : ListView.separated(
-                                itemCount: results.length,
-                                separatorBuilder: (_, __) =>
-                                    const Divider(height: 1),
-                                itemBuilder: (_, i) {
-                                  final (label, point) = results[i];
-                                  return ListTile(
-                                    leading: const Icon(Icons.place),
-                                    title: Text(label,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis),
-                                    subtitle: Text(
-                                      '${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}',
-                                    ),
-                                    onTap: () async {
-                                      final addr =
-                                          await _getAddressFromLatLng(point);
-                                      setState(() {
-                                        _endLocation = point;
-                                        _endAddress = addr;
-                                        _locationStatus =
-                                            'End Location set by search.';
-                                      });
-                                      _calculateDistance();
-                                      _moveToCenter(point, 15);
-                                      if (context.mounted)
-                                        Navigator.pop(context);
-                                    },
-                                  );
-                                },
-                              ),
+                        ? const Center(
+                        child:
+                        Text('Type a place name and press search'))
+                        : ListView.separated(
+                      itemCount: results.length,
+                      separatorBuilder: (_, __) =>
+                      const Divider(height: 1),
+                      itemBuilder: (_, i) {
+                        final (label, point) = results[i];
+                        return ListTile(
+                          leading: const Icon(Icons.place),
+                          title: Text(label,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis),
+                          subtitle: Text(
+                            '${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}',
+                          ),
+                          onTap: () async {
+                            final addr =
+                            await _getAddressFromLatLng(point);
+                            if (!mounted) return;
+                            setState(() {
+                              _endLocation = point;
+                              _endAddress = addr;
+                              _locationStatus =
+                              'End Location set by search.';
+                            });
+                            _calculateDistance();
+                            _moveToCenter(point, 15);
+
+                            // 🟢 Fixed curly braces & async context check
+                            if (modalCtx.mounted) {
+                              Navigator.pop(modalCtx);
+                            }
+                          },
+                        );
+                      },
+                    ),
                   ),
                   const SizedBox(height: 8),
                   ElevatedButton.icon(
@@ -412,10 +422,10 @@ class _GeocodingDistanceCalculatorPageState
                   children: [
                     TileLayer(
                       urlTemplate:
-                          'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                       subdomains: const ['a', 'b', 'c'],
                       userAgentPackageName:
-                          'com.kendroo.gpslocator', // must match app id
+                      'com.kendroo.gpslocator', // must match app id
                     ),
                     MarkerLayer(
                       markers: [
@@ -466,11 +476,11 @@ class _GeocodingDistanceCalculatorPageState
                     onPressed: _isLoading ? null : _getStartLocation,
                     icon: _isLoading
                         ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2),
-                          )
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2),
+                    )
                         : const Icon(Icons.location_searching),
                     label: const Text('SET START (CURRENT)'),
                     style: ElevatedButton.styleFrom(
@@ -492,7 +502,7 @@ class _GeocodingDistanceCalculatorPageState
                     label: const Text('SHARE TRIP'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
-                          canShare ? Colors.green.shade700 : Colors.grey,
+                      canShare ? Colors.green.shade700 : Colors.grey,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       textStyle: const TextStyle(
@@ -510,17 +520,9 @@ class _GeocodingDistanceCalculatorPageState
     );
   }
 
-  test("addition", () {
-  expect(2 + 3, 10);
-  });
-
   // Info card
   Widget _buildInfoCard() {
-    final distanceText = _formatDistance(_distanceInMeters);
-    Color distanceColor = _distanceInMeters != null
-        ? Colors.indigo
-        : (_startLocation != null ? Colors.orange.shade700 : Colors.grey);
-
+    // 🟢 Fixed unused local variables by removing them since they are commented out in UI
     return Card(
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -546,19 +548,6 @@ class _GeocodingDistanceCalculatorPageState
               ],
             ),
             const Divider(height: 20),
-            // Row(
-            //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            //   children: [
-            //     const Text('Calculated Distance:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            //     Flexible(
-            //       child: Text(
-            //         distanceText,
-            //         textAlign: TextAlign.right,
-            //         style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: distanceColor),
-            //       ),
-            //     ),
-            //   ],
-            // ),
           ],
         ),
       ),
@@ -576,7 +565,7 @@ class _GeocodingDistanceCalculatorPageState
           const SizedBox(width: 8),
           Text(label,
               style:
-                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         ]),
         Padding(
           padding: const EdgeInsets.only(left: 28.0, top: 4.0),
