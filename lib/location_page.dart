@@ -40,7 +40,7 @@ class _GeocodingDistanceCalculatorPageState
   String _locationStatus = 'Initializing...6';
   bool _isLoading = false;
 
-  String name = 5;
+
   // Fallback center (Dhaka)
   final ll.LatLng _fallbackCenter = const ll.LatLng(23.780573, 90.279239);
   StreamSubscription<loc.LocationData>? _locationSub;
