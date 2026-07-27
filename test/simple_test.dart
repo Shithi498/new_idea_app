@@ -4,6 +4,4 @@ void main() {
   test('Simple addition', () {
     expect(2 + 3, 5);
   });
-
 }
-
