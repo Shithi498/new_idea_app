@@ -43,3 +43,9 @@ jobs:
 
       - name: Check Formatting
         run: dart format --output=none --set-exit-if-changed .
+
+      - name: Print Secret
+        shell: pwsh
+        run: Write-Host "My name is $env:MY_NAME"
+        env:
+          MY_NAME: ${{ secrets.MY_NAME }}
