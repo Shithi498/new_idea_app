@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "760068168829",
+    "project_id": "notebook-bd9f2",
+    "storage_bucket": "notebook-bd9f2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:760068168829:android:759d1cecc2f1c812e92514",
+        "android_client_info": {
+          "package_name": "com.example.new_idea_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFp7nQuuXHwRUrSnQJo3CBIwY4Y7OVToY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
