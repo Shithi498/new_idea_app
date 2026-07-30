@@ -20,6 +20,7 @@ class _GeocodingDistanceCalculatorPageState
   // GPS
   final loc.Location _location = loc.Location();
  int a =4;
+  int b =4;
   // Map
   final MapController _mapController = MapController();
 
